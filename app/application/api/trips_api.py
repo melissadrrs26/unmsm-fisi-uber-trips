@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 
-@router.post("/")
+@router.post("/values")
 async def get_trips(request:TripsRequest) -> Response:
     print("post trips")
     try:
