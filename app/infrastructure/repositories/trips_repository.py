@@ -11,3 +11,7 @@ class TripsRepository:
         
         return data
     
+    async def get_indicators(self) -> DataFrame:
+        data = self.bucket.get_df_parquet_object(f"trips_uber_summary/indicators.parquet")
+        
+        return data

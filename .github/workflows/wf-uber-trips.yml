@@ -30,3 +30,9 @@ jobs:
 
     - name: Push Docker image
       run: docker push $IMAGE:latest
+
+    - name: Update Lambda function to use latest image
+      run: |
+        aws lambda update-function-code \
+          --function-name unmsm-fisi-uber-trips \
+          --image-uri $IMAGE:latest

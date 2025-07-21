@@ -1,12 +1,12 @@
 
 import json
-from polars import DataFrame, col, concat_list, lit, Utf8
+from polars import DataFrame, Date, col, concat_list, lit, Utf8
 from ...infrastructure import TripsRepository
 from ...utils import enum
 
 class TripsService:
 
-    async def set_trips_json(self, date_code:str):
+    async def get_trips(self, date_code:str):
 
         cols = ["timestamp","centroid_lat","centroid_lon","type_code","value"]
         df_anomalous = await TripsRepository().get_trips(enum.TYPE_TRIP.Anomalous.value, date_code)
@@ -43,5 +43,28 @@ class TripsService:
         data_js = {}
         data_js[enum.TYPE_TRIP.Anomalous.value] =  dict_anomalous
         data_js[enum.TYPE_TRIP.NoAnomalous.value] = dict_non_anomalous
+
+        return data_js
+    
+
+    async def get_indicators(self, date_code:str):
+
+        df_indicators = await TripsRepository().get_indicators()
+ 
+        df_indicators = df_indicators.sort(["date"], descending=[True])
+        df_indicators = df_indicators.filter(col("date") <= lit(date_code).str.strptime(Date))
+        df_indicators = df_indicators.head(7)
+       
+        df_indicators = df_indicators.select([
+                         col("sum_trips").sum().alias("total_trips")
+                        ,col("sum_anomalies").sum().alias("total_anomalies")
+                    ])
+        
+        df_indicators = df_indicators.with_columns(lit(date_code, Utf8).alias("date"))
+
+        data_js = {}
+        data_js["date"] = df_indicators[0]["date"].item()
+        data_js["total_trips"] = df_indicators[0]["total_trips"].item()
+        data_js["total_anomalies"] = df_indicators[0]["total_anomalies"].item()
 
         return data_js
