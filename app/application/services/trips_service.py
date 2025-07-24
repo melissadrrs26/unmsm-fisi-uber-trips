@@ -53,18 +53,33 @@ class TripsService:
  
         df_indicators = df_indicators.sort(["date"], descending=[True])
         df_indicators = df_indicators.filter(col("date") <= lit(date_code).str.strptime(Date))
-        df_indicators = df_indicators.head(7)
-       
-        df_indicators = df_indicators.select([
-                         col("sum_trips").sum().alias("total_trips")
-                        ,col("sum_anomalies").sum().alias("total_anomalies")
-                    ])
-        
-        df_indicators = df_indicators.with_columns(lit(date_code, Utf8).alias("date"))
 
         data_js = {}
-        data_js["date"] = df_indicators[0]["date"].item()
-        data_js["total_trips"] = df_indicators[0]["total_trips"].item()
-        data_js["total_anomalies"] = df_indicators[0]["total_anomalies"].item()
+        data_js["date"] = date_code
+        data_js["total_trips"] = None
+        data_js["total_anomalies"] = None
+        data_js["increased_demand_pct"] = None
+        data_js["hot_location"] = None
+        data_js["rush_hour"] = None
+
+        if df_indicators.height > 0:
+            df_indicators = df_indicators.head(7)
+        
+            df_indicators_sum = df_indicators.select([
+                            col("sum_trips").sum().alias("total_trips")
+                            ,col("sum_anomalies").sum().alias("total_anomalies")
+                            ,col("increased_demand_pct").mean().alias("increased_demand_pct")
+                        ])
+
+            df_indicators_max = df_indicators.sort(["sum_trips"], descending=[True])
+            df_indicators_max = df_indicators_max.head(1)
+            df_indicators_max = df_indicators_max.select("hot_location","rush_hour")
+                    
+
+            data_js["total_trips"] = df_indicators_sum[0]["total_trips"].item()
+            data_js["total_anomalies"] = df_indicators_sum[0]["total_anomalies"].item()
+            data_js["increased_demand_pct"] = df_indicators_sum[0]["increased_demand_pct"].item()
+            data_js["hot_location"] = df_indicators_max[0]["hot_location"].item()
+            data_js["rush_hour"] = df_indicators_max[0]["rush_hour"].item()
 
         return data_js
