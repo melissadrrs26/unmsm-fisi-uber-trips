@@ -83,3 +83,31 @@ class TripsService:
             data_js["rush_hour"] = df_indicators_max[0]["rush_hour"].item()
 
         return data_js
+    
+
+    async def get_summary_trips(self, date_code:str):
+
+        df_indicators = await TripsRepository().get_indicators()
+ 
+        df_indicators = df_indicators.sort(["date"], descending=[True])
+        df_indicators = df_indicators.filter(col("date") <= lit(date_code).str.strptime(Date))
+
+        data_js = []
+        if df_indicators.height > 0:
+            df_indicators = df_indicators.head(7)
+        
+            df_indicators = df_indicators.with_columns(
+                total_normal = col("sum_trips") - col("sum_anomalies")
+            )
+
+            df_indicators = df_indicators.rename({
+                "sum_anomalies": "total_anomalies"
+            })
+
+            df_indicators = df_indicators.select("date","total_normal","total_anomalies")
+
+            data_js = df_indicators.to_dicts()
+            
+
+        return data_js
+    

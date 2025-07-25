@@ -41,3 +41,18 @@ async def get_trips(request:TripsRequest) -> Response:
         raise HTTPException(status_code=501, detail=str(e))
 
     return response
+
+@router.post("/history_events")
+async def get_trips(request:TripsRequest) -> Response:
+    print("post indicators")
+    try:
+        
+        result = await TripsService().get_summary_trips(request.date_code)
+        response = Response(status_code=200, status_name="OK", message="Complete", result=result)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:      
+        traceback.print_exc()
+        raise HTTPException(status_code=501, detail=str(e))
+
+    return response
